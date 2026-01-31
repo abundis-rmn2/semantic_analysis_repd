@@ -12,3 +12,6 @@ python-dotenv
 tenacity
 networkx
 scikit-learn
+streamlit
+pyarrow
+faiss-cpu

@@ -1,2 +1,5 @@
 config/.env
 *.csv
+results/*
+__pycache__/*
+reusable/*
