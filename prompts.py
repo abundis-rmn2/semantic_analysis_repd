@@ -1,10 +1,17 @@
 # Prompt templates for the exploratory pipeline
 
-EXPLORATORY_SCENARIO_PROMPT = """Analiza el siguiente relato de desaparición y genera hipótesis plausibles sobre lo ocurrido.
-No te limites a violencia; considera múltiples escenarios como ausencia voluntaria, reclutamiento forzado, accidentes, internamientos, etc.
+EXPLORATORY_SCENARIO_PROMPT = """Analiza el siguiente relato de desaparición y genera hipótesis plausibles utilizando ÚNICAMENTE las siguientes MACROCLASES:
+- coerción_armada (desaparición forzada, presencia de armas/vehículos)
+- ausencia_voluntaria (partida por voluntad propia, sin violencia)
+- laboral_forzada (engaño laboral, reclutamiento)
+- migración (traslado fronterizo o intención de emigrar)
+- internamiento_institucional (detención por autoridad, hospital, anexo)
+- conflicto_familiar (discusión previa, problemas domésticos)
+- accidente (vial, laboral, natural)
+- desconocido (sin información suficiente)
 
 Instrucciones:
-1. Identifica hasta 4 escenarios posibles.
+1. Identifica hasta 4 escenarios posibles de la lista anterior.
 2. Para cada escenario, asigna una confianza (alta, media, baja).
 3. Proporciona citas textuales exactas que respalden cada escenario.
 4. No infieras identidades ni afirmes causalidad definitiva.

@@ -3,3 +3,4 @@ config/.env
 results/*
 __pycache__/*
 reusable/*
+lib/*

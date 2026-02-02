@@ -36,7 +36,7 @@ def main():
     processor = ProbableProcessor(output_dir=args.output_dir)
     
     # Run Pipeline
-    results = processor.run_pipeline(df, skip_llm=args.skip_llm)
+    results = processor.run_pipeline(df, skip_llm=args.skip_llm, batch_size=args.batch_size)
     
     # Build Graph
     logger.info("Building affinity graph...")

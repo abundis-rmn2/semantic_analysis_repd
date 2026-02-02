@@ -18,7 +18,8 @@ def build_affinity_graph(df: pd.DataFrame, similarity_threshold: float = 0.7) ->
         node_id = row['id_original']
         G.add_node(node_id, 
                    municipio=row.get('municipio', 'UNKNOWN'),
-                   ambiguity=row.get('ambiguity_score', 0))
+                   ambiguity=row.get('ambiguity_score', 0),
+                   cluster=row.get('cluster_label', -1))
 
     # Add edges based on similarities
     logger.info("Generating affinity edges...")

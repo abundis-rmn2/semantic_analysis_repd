@@ -11,6 +11,7 @@ from reusable.text_utils import normalize_text, extract_regex_slots
 from schemas import EventAnalysis, ScenarioHypothesis, Evidence
 from prompts import EXPLORATORY_SCENARIO_PROMPT, AMBIGUITY_DETECTOR_PROMPT
 from storage import StorageManager
+from clustering_utils import perform_clustering, calculate_cluster_entropy
 
 # External deps
 from openai import OpenAI
@@ -117,16 +118,17 @@ class ProbableProcessor:
             logger.error(f"LLM Error (ambiguity): {e}")
             return {"ambiguity_score": 1.0, "error": str(e)}
 
-    def run_pipeline(self, df: pd.DataFrame, skip_llm: bool = False):
+    def run_pipeline(self, df: pd.DataFrame, skip_llm: bool = False, batch_size: int = 10):
         all_results = []
+        current_batch = []
         
-        for idx, row in df.iterrows():
+        for i, (idx, row) in enumerate(df.iterrows()):
             id_orig = str(row.get('id_cedula_busqueda', idx))
             raw_text = str(row.get('descripcion_desaparicion', ''))
             norm_text = normalize_text(raw_text)
             input_hash = hashlib.sha256(raw_text.encode()).hexdigest()
             
-            logger.info(f"Processing {id_orig}...")
+            logger.info(f"[{i+1}/{len(df)}] Processing {id_orig}...")
             
             # A. Observables (Deterministic)
             observables = self.signal_engineering(row)
@@ -140,7 +142,6 @@ class ProbableProcessor:
                 ambiguity_data = self.call_llm_ambiguity(raw_text)
             
             # C. Merge & Corroborate
-            # (Heuristic: raise confidence if LLM + deterministic match)
             for scenario in scenarios:
                 if scenario.scenario_label == 'laboral_forzada' and any(h['family'] == 'laboral' for h in observables['keyword_hits']):
                     scenario.scenario_confidence = 'alta'
@@ -165,12 +166,34 @@ class ProbableProcessor:
                 dict_res['embedding'] = self.embedding_model.encode(raw_text).tolist()
                 
             all_results.append(dict_res)
+            current_batch.append(dict_res)
             
-            # Provenance log
+            # Provenance log (per record)
             self.storage.save_provenance(id_orig, input_hash, "scenarios_v1", json.dumps([s.dict() for s in scenarios]), self.pipeline_version)
 
-        # Batch save
-        self.storage.save_results(all_results)
+            # E. Incremental Save (Batch)
+            if (i + 1) % batch_size == 0 or (i + 1) == len(df):
+                logger.info(f"Saving incremental batch of {len(current_batch)} items...")
+                self.storage.save_results(current_batch, append=True)
+                current_batch = []
+
+        # --- Phase B: Clustering ---
+        if self.embedding_model and len(all_results) > 1:
+            import numpy as np
+            embeddings = np.array([r['embedding'] for r in all_results])
+            cluster_labels = perform_clustering(embeddings)
+            
+            # Map labels back to results
+            for i, label in enumerate(cluster_labels):
+                all_results[i]['cluster_label'] = int(label)
+                
+            # Phase C: Governance (Entropy)
+            entropy_val = calculate_cluster_entropy(cluster_labels)
+            logger.info(f"Pipeline Governance - Cluster Entropy: {entropy_val:.4f}")
+            
+            # Final rewrite with cluster labels
+            logger.info("Updating final results with cluster labels...")
+            self.storage.save_results(all_results, append=False)
         
         # FAISS save
         if self.embedding_model:
