@@ -70,10 +70,70 @@ def build_affinity_graph(df: pd.DataFrame, similarity_threshold: float = 0.7) ->
 
     return G
 
+def build_bipartite_network(df: pd.DataFrame, keyword_pool: Dict[str, List[str]] = None) -> nx.Graph:
+    """
+    Build a bipartite (multi-mode) network connecting:
+    Case -> Scenario
+    Case -> Keyword -> Family
+    """
+    G = nx.Graph()
+    
+    # Pre-map keywords to families for efficiency
+    kw_to_family = {}
+    if keyword_pool:
+        for family, kws in keyword_pool.items():
+            for kw in kws:
+                kw_to_family[kw.lower()] = family
+
+    for _, row in df.iterrows():
+        case_id = row['id_original']
+        G.add_node(case_id, type='case', municipio=row.get('municipio'))
+        
+        # 1. Case -> Scenario
+        scs = row.get('scenarios', [])
+        if isinstance(scs, str):
+            import json
+            try: scs = json.loads(scs)
+            except: scs = []
+            
+        for s in scs:
+            if s.get('scenario_confidence') in ['alta', 'media']:
+                scen_node = f"SCEN:{s['scenario_label']}"
+                G.add_node(scen_node, type='scenario', label=s['scenario_label'])
+                G.add_edge(case_id, scen_node, weight=1.0 if s['scenario_confidence'] == 'alta' else 0.5)
+
+        # 2. Case -> Keyword -> Family
+        kws = row.get('keywords', [])
+        if isinstance(kws, str):
+            import json
+            try: kws = json.loads(kws)
+            except: kws = []
+
+        for kw in kws:
+            kw_node = f"KW:{kw.lower()}"
+            G.add_node(kw_node, type='keyword', label=kw.lower())
+            G.add_edge(case_id, kw_node, weight=1.0)
+            
+            # Map to family if exists
+            family = kw_to_family.get(kw.lower())
+            if family:
+                fam_node = f"FAM:{family}"
+                G.add_node(fam_node, type='family', label=family)
+                G.add_edge(kw_node, fam_node, weight=1.0)
+
+    return G
+
 def save_graph(G: nx.Graph, output_path: str):
-    """Save graph to GML."""
+    """Save graph to GML with string conversion for non-serializable fields."""
     try:
-        nx.write_gml(G, output_path)
+        # GML doesn't like lists/dicts in attributes
+        G_serializable = G.copy()
+        for n, data in G_serializable.nodes(data=True):
+            for k, v in data.items():
+                if isinstance(v, (list, dict)):
+                    G_serializable.nodes[n][k] = str(v)
+        
+        nx.write_gml(G_serializable, output_path)
         logger.info(f"Graph saved to {output_path}")
     except Exception as e:
         logger.error(f"Error saving graph: {e}")

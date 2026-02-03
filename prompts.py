@@ -1,84 +1,95 @@
 # Prompt templates for the exploratory pipeline
 
-EXPLORATORY_SCENARIO_PROMPT = """Analiza el siguiente relato de desaparición y genera hipótesis plausibles utilizando ÚNICAMENTE las siguientes MACROCLASES:
-- coerción_armada (desaparición forzada, presencia de armas/vehículos)
-- ausencia_voluntaria (partida por voluntad propia, sin violencia)
-- laboral_forzada (engaño laboral, reclutamiento)
-- migración (traslado fronterizo o intención de emigrar)
-- internamiento_institucional (detención por autoridad, hospital, anexo)
-- conflicto_familiar (discusión previa, problemas domésticos)
-- accidente (vial, laboral, natural)
-- desconocido (sin información suficiente)
+EXPLORATORY_SCENARIO_PROMPT = """Analiza el siguiente relato de desaparición y genera HIPÓTESIS CONCURRENTES.
+Tu objetivo es actuar como un analista de inteligencia criminal que identifica PATRONES pero también DESCUBRE ANOMALÍAS.
+
+REGLAS DE DIVERGENCIA (CRÍTICO):
+1. NO TE LIMITES AL POOL: Los escenarios del POOL son solo una guía. Si el relato tiene matices únicos (ej. un lugar específico, un objeto extraño, una dinámica inusual), propón un ESCENARIO NUEVO y descriptivo.
+2. PENSAMIENTO LATERAL: Si un caso parece encajar en un escenario "Oro" (ej. Secuestro), pero tiene un detalle que sugiere otra cosa (ej. se llevó su ropa), propón AMBOS escenarios como hipótesis concurrentes.
+3. GRANULARIDAD: Prefiere un escenario específico (ej. "sustraccion_en_puesto_de_comida") sobre uno genérico (ej. "secuestro") si la información lo permite.
+4. HIPÓTESIS EMERGENTE: Para cada caso, intenta proponer al menos una hipótesis que no sea del pool actual, basándote puramente en la narrativa.
+
+CRITERIOS DE ANÁLISIS AMPLIADO:
+1. RECLUTAMIENTO/TRABAJO: Si menciona "ver lo de un trabajo", "oferta laboral", o que "pasarían por él para ir a un trabajo", explora escenarios de "reclutamiento engañoso" o "riesgo laboral no verificado". El hecho de que "pasen por ellos" es una señal de alerta crítica.
+2. CENTROS DE REHABILITACIÓN (ANEXOS): Si menciona "anexo", "centro de rehabilitación", o "clínica de adicciones", identifica escenarios relacionados con "internamiento forzado" o "conflictos en centros de rehabilitación".
+3. CONFLICTO PREVIO: Si menciona "una discusión", "peleas" o "problemas familiares", explora el escenario de "ausencia por conflicto" o "fuga reactiva".
+4. ESTADO EMOCIONAL/MENSAJES: Si hay mensajes de "perdón", "te amo", "voz quebrada" o despedidas, considera seriamente "crisis emocional/ideación suicida" o "coerción bajo amenaza remota".
+5. DISCREPANCIAS: Si el relato dice que iba a trabajar pero el patrón dice que no fue, explora "vida paralela", "engaño laboral" o "actividades no reportadas".
+6. EVITA EL "DESCONOCIDO": Solo úsalo si el relato no aporta NINGÚN verbo de acción, emoción o conflicto.
+
+POOL DE ESCENARIOS ACTUAL (Como referencia, no como límite):
+{scenario_pool}
 
 Instrucciones:
-1. Identifica hasta 4 escenarios posibles de la lista anterior.
-2. Para cada escenario, asigna una confianza (alta, media, baja).
-3. Proporciona citas textuales exactas que respalden cada escenario.
-4. No infieras identidades ni afirmes causalidad definitiva.
-5. Responde estrictamente en formato JSON.
+1. Genera hasta 5 hipótesis de escenarios distintos.
+2. Define la CONFIANZA basándote en:
+   - ALTA: Evidencia directa y fáctica (testigos oculares, mención de armas, vehículos específicos, amenazas previas explícitas).
+   - MEDIA: Patrones circunstanciales claros pero sin observación directa (ej. desapareció tras cita de trabajo sospechosa, dejó de contestar en una zona de riesgo conocida).
+   - BAJA: Inferencia analítica o especulativa basada en huecos de información o contexto regional (posibilidades "qué tal si..." que son lógicamente plausibles pero sin rastro físico en el relato).
+3. Explica el razonamiento detrás de cada posibilidad en el campo 'notes'.
+4. Extrae PALABRAS CLAVE (keywords) de alta granularidad. No uses términos genéricos como "desaparición". Enfócate en:
+   - MODALIDAD: "subida a la fuerza", "engaño laboral", "cita por redes".
+   - OBJETOS/VEHÍCULOS: "camioneta blanca", "motocicleta", "celular apagado".
+   - ACTORES: "encapuchados", "compañero de trabajo", "ex pareja".
+   - COMPORTAMIENTO: "nerviosismo previo", "dejo de contestar", "iba a una fiesta".
+   - CONTEXTO GEOGRÁFICO/TEMPORAL: "zona de bares", "madrugada", "frontera".
+   Esto alimentará la red de relaciones y la detección automática de patrones.
 
-Ejemplos:
-
-Relato: "Se lo llevaron varios sujetos armados que llegaron en una camioneta blanca, lo golpearon y lo subieron a la fuerza."
-Respuesta: {{
-    "scenarios": [
-        {{
-            "scenario_label": "coerción_armada",
-            "scenario_confidence": "alta",
-            "supporting_signals": ["uso de fuerza", "vehículo sospechoso", "sujetos armados"],
-            "text_cites": ["sujetos armados", "lo golpearon", "subieron a la fuerza"],
-            "notes": "Escenario típico de desaparición forzada por grupo criminal."
-        }}
-    ]
-}}
-
-Relato: "Salió de su casa tras una discusión con sus padres, diciendo que ya no quería estar ahí. Se llevó una mochila con ropa."
-Respuesta: {{
-    "scenarios": [
-        {{
-            "scenario_label": "ausencia_voluntaria",
-            "scenario_confidence": "alta",
-            "supporting_signals": ["discusión previa", "preparación de equipaje", "intención declarada"],
-            "text_cites": ["ya no quería estar ahí", "se llevó una mochila con ropa"],
-            "notes": "Los indicadores sugieren una partida por voluntad propia tras conflicto familiar."
-        }}
-    ]
-}}
-
-Relato: "Le ofrecieron un trabajo muy bien pagado en otra ciudad por Facebook. Se fue con un contacto que no conocíamos y ya no responde el celular."
-Respuesta: {{
-    "scenarios": [
-        {{
-            "scenario_label": "laboral_forzada_o_tata",
-            "scenario_confidence": "media",
-            "supporting_signals": ["oferta laboral sospechosa", "redes sociales", "traslado con desconocidos"],
-            "text_cites": ["trabajo muy bien pagado", "contacto que no conocíamos"],
-            "notes": "Posible enganche mediante engaño para explotación o reclutamiento."
-        }},
-        {{
-            "scenario_label": "migración_irregular",
-            "scenario_confidence": "baja",
-            "supporting_signals": ["traslado a otra ciudad"],
-            "text_cites": ["se fue con un contacto"],
-            "notes": "Menos probable pero el traslado podría ser parte de un intento migratorio."
-        }}
-    ]
-}}
-
-Nuevo Relato a analizar:
+Relato a analizar:
 "{text}"
 
 Esquema JSON esperado:
 {{
     "scenarios": [
         {{
-            "scenario_label": "string",
+            "scenario_label": "nombre_descriptivo_snake_case",
             "scenario_confidence": "alta/media/baja",
-            "supporting_signals": ["string"],
-            "text_cites": ["string"],
-            "notes": "string"
+            "supporting_signals": ["señal_identificada"],
+            "text_cites": ["cita_textual_opcional"],
+            "notes": "Razonamiento analítico: ¿Por qué esta posibilidad es plausible?"
         }}
+    ],
+    "discovered_keywords": ["string"]
+}}
+"""
+
+SCENARIO_NORMALIZER_PROMPT = """Actúa como un Curador de Taxonomía Criminal. Tu misión es integrar escenarios "emergentes" descubiertos por la IA en el pool estándar, asegurando CLARIDAD y DIVERSIDAD.
+
+REGLAS DE ORO DE NORMALIZACIÓN:
+1. PROHIBIDA LA SOBRE-SIMPLIFICACIÓN: Si un escenario emergente aporta un detalle de MODALIDAD crítico (ej. "oferta_por_facebook", "anexo_clandestino"), NO lo fusiones con una categoría genérica (ej. "reclutamiento" o "salud"). La especificidad es oro para la inteligencia.
+2. FUSIÓN SÓLO POR SINONIMIA: Solo fusiona si el significado es idéntico (ej. "pelea_conyugal" y "discusion_pareja").
+3. PRESERVA LA "ALMA" DEL RELATO: Los escenarios emergentes representan lo que el modelo ha descubierto de nuevo. Si un escenario nuevo se repite en el batch pero no está en el pool, conviértelo en estándar pero mantén su descripción detallada.
+4. TIPO DE ESCENARIO: Clasifícalo como "estándar" si es un patrón general, o "emergente" si es muy específico o inusual.
+
+Pool Actual (Referencia):
+{standard_pool}
+
+Escenarios Emergentes:
+{emergent_scenarios}
+
+Responde en JSON:
+{{
+    "updated_pool": [
+        {{ "label": "nombre_en_snake_case", "description": "descripción analítica", "type": "estándar/emergente" }}
     ]
+}}
+"""
+
+KEYWORD_POOL_PROMPT = """Revisa la lista de palabras clave extraídas de un batch de relatos y el pool actual de palabras clave organizadas por familias.
+Integra las nuevas palabras clave en las familias existentes o crea nuevas si es necesario.
+
+Pool Actual:
+{keyword_pool}
+
+Nuevas Palabras Clave:
+{new_keywords}
+
+Responde en JSON:
+{{
+    "updated_keyword_pool": {{
+        "familia_1": ["palabra1", "palabra2"],
+        "nueva_familia": ["palabra3"]
+    }}
 }}
 """
 

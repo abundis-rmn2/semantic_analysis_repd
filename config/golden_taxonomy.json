@@ -1,0 +1,51 @@
+{
+    "scenarios": [
+        {
+            "label": "reclutamiento_enganoso_laboral",
+            "description": "Desaparición vinculada a ofertas de trabajo falsas o sospechosas, frecuentemente donde la víctima es citada o 'pasada a recoger' por terceros para un supuesto empleo.",
+            "type": "golden"
+        },
+        {
+            "label": "internamiento_forzado_anexo",
+            "description": "Desaparición relacionada con el ingreso involuntario a centros de rehabilitación, anexos o clínicas de adicciones, ya sea por familiares o por grupos externos.",
+            "type": "golden"
+        },
+        {
+            "label": "secuestro_crimen_organizado",
+            "description": "Privación ilegal de la libertad ejecutada por comandos armados, sujetos encapuchados o grupos con logística clara delictiva.",
+            "type": "golden"
+        },
+        {
+            "label": "conflicto_interpersonal_familiar",
+            "description": "Ausencia originada inmediatamente después de una discusión, pelea o crisis dentro del entorno familiar o de pareja.",
+            "type": "golden"
+        },
+        {
+            "label": "consumo_sustancias_crisis",
+            "description": "Desaparición en contexto de consumo activo de drogas o crisis de adicción, donde la persona pierde contacto tras buscar sustancias o bajo efectos intoxicantes.",
+            "type": "golden"
+        }
+    ],
+    "keywords": {
+        "laboral": [
+            "trabajo",
+            "empleo",
+            "patrón",
+            "sueldo",
+            "entrevista"
+        ],
+        "salud": [
+            "anexo",
+            "rehabilitación",
+            "clínica",
+            "adicción",
+            "vicio"
+        ],
+        "violencia": [
+            "encapuchados",
+            "armas",
+            "camioneta cerrada",
+            "subieron a la fuerza"
+        ]
+    }
+}

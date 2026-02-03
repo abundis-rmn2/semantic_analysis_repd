@@ -37,6 +37,7 @@ class EventAnalysis(BaseModel):
         }
     )
     scenarios: List[ScenarioHypothesis] = Field(default_factory=list)
+    keywords: List[str] = Field(default_factory=list, description="List of unique keywords discovered in this case")
     ambiguity_score: float = Field(0.0, ge=0.0, le=1.0)
     evidence_snippets: List[str] = Field(default_factory=list)
     llm_meta: Dict[str, Any] = Field(default_factory=dict)

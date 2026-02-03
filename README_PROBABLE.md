@@ -24,14 +24,16 @@ Para ejecutar sin llamadas a LLM (solo señales deterministas):
 python process_probable.py --skip-llm
 ```
 
-## Salidas
+## Sistema de Pooling Dinámico (v1.2)
 
-- `results/probable_analysis.parquet`: Datos completos con estructuras ricas.
-- `results/probable_analysis.csv`: Exportación para revisión humana.
-- `results/probable_graph.gml`: Grafo de conexiones entre casos.
-- `results/provenance.db`: Logs de auditoría y versiones.
-- `results/prompts_log.jsonl`: Registro detallado de interacciones con el LLM.
+El pipeline implementa un sistema de retroalimentación iterativa consolidado en un solo archivo:
 
-## Configuración
+- **Narrative Taxonomy (`results/narrative_taxonomy.json`)**: 
+    - **Keywords**: Almacena palabras clave extraídas normalizadas por familias semánticas.
+    - **Scenarios**: Mantiene la taxonomía evolutiva de escenarios de desaparición.
+    - El LLM actualiza este archivo cada batch, permitiendo que el sistema "aprenda" y use estas categorías en la siguiente pasada.
 
-Asegúrate de tener un archivo `config/.env` con tu `DEEPSEEK_API_KEY`.
+## Salidas Adicionales
+
+- `results/narrative_taxonomy.json`: Diccionario unificado de inteligencia narrativa.
+- `results/relationship_network.gml`: Red interactiva de casos, escenarios y palabras clave.

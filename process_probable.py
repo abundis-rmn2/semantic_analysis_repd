@@ -38,14 +38,6 @@ def main():
     # Run Pipeline
     results = processor.run_pipeline(df, skip_llm=args.skip_llm, batch_size=args.batch_size)
     
-    # Build Graph
-    logger.info("Building affinity graph...")
-    res_df = pd.DataFrame(results)
-    G = build_affinity_graph(res_df)
-    
-    graph_path = os.path.join(args.output_dir, "probable_graph.gml")
-    save_graph(G, graph_path)
-    
     logger.info(f"Pipeline finished. See {args.output_dir}/ for results.")
 
 if __name__ == "__main__":

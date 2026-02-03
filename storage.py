@@ -51,6 +51,8 @@ class StorageManager:
         # Flatten complex structures for CSV better readability
         if 'scenarios' in csv_df.columns:
             csv_df['scenarios'] = csv_df['scenarios'].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else x)
+        if 'keywords' in csv_df.columns:
+            csv_df['keywords'] = csv_df['keywords'].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
         
         if not append or not os.path.exists(self.csv_path):
             csv_df.to_csv(self.csv_path, index=False)
