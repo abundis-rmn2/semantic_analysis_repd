@@ -41,10 +41,15 @@ To set up this project on a Raspberry Pi (Pi 4 or newer recommended):
    cp config/.env.example config/.env
    # Edit config/.env and add your DEEPSEEK_API_KEY
    ```
-3. **Run the Dashboard**:
+3. **Run the Analysis**:
    ```bash
    source venv/bin/activate
+   # Example: process 20 cases to verify
+   python process_probable.py --sample 20
+   ```
+4. **Run the Dashboard**:
+   ```bash
    streamlit run dashboard_probable.py
    ```
 
-Note: Some heavy dependencies like `faiss-cpu` and `sentence-transformers` may take significant time to install and may require at least 4GB of RAM for smooth operation.
+Note: This setup uses **CPU-only** libraries and pins `numpy<2` to ensure stability on ARM architecture. Even so, the initial installation and first run may take some time.
