@@ -8,7 +8,18 @@ sudo apt-get install -y \
     python3-venv \
     libatlas-base-dev \
     libgomp1 \
-    pkg-config
+    pkg-config \
+    wget
+
+# Create data directory and download sample data if not exists
+echo "Setting up data..."
+mkdir -p data
+if [ ! -f "data/sisovid.csv" ]; then
+    echo "Downloading sisovid.csv..."
+    wget -O data/sisovid.csv http://tejer.red/sisovid.csv
+else
+    echo "data/sisovid.csv already exists, skipping download."
+fi
 
 # Create virtual environment
 echo "Creating virtual environment..."

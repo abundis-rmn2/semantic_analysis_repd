@@ -16,6 +16,7 @@ This project is optimized for CPU-only environments, including standard PCs and 
 - Python 3.10+
 - DeepSeek API Key (configured in `config/.env`)
 - **For Raspberry Pi**: Minimum 4GB RAM recommended (or 2GB Swap enabled).
+- **Data**: The setup script automatically downloads `sisovid.csv` from `http://tejer.red/sisovid.csv`.
 
 ### 2. Universal Setup
 Run the automated setup script. It will detect your architecture (ARM or x86) and apply the necessary patches for architecture stability:
