@@ -18,9 +18,14 @@ source venv/bin/activate
 # Upgrade pip
 pip install --upgrade pip
 
+# Set environment variable to prevent Illegal Instruction on some ARM chips (Numpy/OpenBLAS)
+export OPENBLAS_CORETYPE=ARMV8
+echo "export OPENBLAS_CORETYPE=ARMV8" >> venv/bin/activate
+
 # Install requirements
 echo "Installing Python dependencies (this may take a while on a Pi)..."
 pip install -r requirements.txt
+pip install plotly  # Extra safety
 
 # Download Spacy model
 echo "Downloading Spacy model..."
