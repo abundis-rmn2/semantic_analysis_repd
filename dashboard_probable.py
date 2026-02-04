@@ -8,8 +8,8 @@ from datetime import datetime
 # Page config
 st.set_page_config(page_title="Probable: Exploratory Analysis Dashboard", layout="wide")
 
-st.title("🔍 Probable: Exploratory Disappearance Analysis")
-st.markdown("### Evolutionary Scenario & Keyword Discovery Pipeline")
+st.title("🔍 Probable: Análisis Exploratorio de Desapariciones")
+st.markdown("### Pipeline de Descubrimiento Evolutivo de Escenarios y Palabras Clave")
 
 # Data loading
 RESULTS_DIR = "results"
@@ -57,16 +57,16 @@ for fam, kws in dynamic_tax.get("keywords", {}).items():
 
 if df is not None:
     # Sidebar Metrics & Management
-    st.sidebar.header("📊 Global Metrics")
-    st.sidebar.metric("Total Records", len(df))
-    st.sidebar.metric("Active Scenarios", len(scenario_pool))
+    st.sidebar.header("📊 Métricas Globales")
+    st.sidebar.metric("Total de Registros", len(df))
+    st.sidebar.metric("Escenarios Activos", len(scenario_pool))
     
     st.sidebar.divider()
-    st.sidebar.subheader("➕ Add Manual Scenario")
+    st.sidebar.subheader("➕ Agregar Escenario Manual")
     with st.sidebar.form("add_scenario_form"):
-        new_label = st.text_input("Label (snake_case)", placeholder="ej. reclutamiento_redes")
-        new_desc = st.text_area("Description", placeholder="Describe las señales de este escenario...")
-        if st.form_submit_button("Save Scenario"):
+        new_label = st.text_input("Etiqueta (snake_case)", placeholder="ej. reclutamiento_redes")
+        new_desc = st.text_area("Descripción", placeholder="Describe las señales de este escenario...")
+        if st.form_submit_button("Guardar Escenario"):
             if new_label and new_desc:
                 # Basic cleaning
                 clean_label = new_label.lower().replace(" ", "_")
@@ -79,7 +79,7 @@ if df is not None:
                     }
                     dynamic_tax["scenarios"] = dynamic_tax.get("scenarios", []) + [new_scen]
                     save_taxonomy(dynamic_tax)
-                    st.sidebar.success(f"Scenario '{clean_label}' added!")
+                    st.sidebar.success(f"¡Escenario '{clean_label}' agregado!")
                     st.rerun()
                 else:
                     st.sidebar.error("Ese label ya existe.")
@@ -90,22 +90,22 @@ if df is not None:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("🧬 Evolutionary Scenario Pool")
+        st.subheader("🧬 Pool de Escenarios Evolutivos")
         if scenario_pool:
             scenario_df = pd.DataFrame(scenario_pool)
             st.dataframe(scenario_df, use_container_width=True)
         else:
-            st.info("No scenarios discovered yet.")
+            st.info("No se han descubierto escenarios aún.")
 
     with col2:
-        st.subheader("🔑 Dynamic Keyword Pool")
+        st.subheader("🔑 Pool Dinámico de Palabras Clave")
         if keyword_pool:
-            family = st.selectbox("Select Family", list(keyword_pool.keys()))
+            family = st.selectbox("Seleccionar Familia", list(keyword_pool.keys()))
             keywords = keyword_pool[family]
-            st.write(f"**Keywords in {family}:**")
+            st.write(f"**Palabras clave en {family}:**")
             st.write(", ".join(keywords))
         else:
-            st.info("No keywords discovered yet.")
+            st.info("No se han descubierto palabras clave aún.")
 
     # Main Analysis Section
     st.divider()
@@ -117,16 +117,16 @@ if df is not None:
     with tab1:
         # Filters
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        municipios = ["All"] + sorted(df["municipio"].unique().tolist())
+        municipios = ["Todos"] + sorted(df["municipio"].unique().tolist())
         with f_col1:
-            sel_mun = st.selectbox("Filter by Municipio", municipios)
+            sel_mun = st.selectbox("Filtrar por Municipio", municipios)
         
         with f_col3:
-            sel_conf = st.multiselect("Filter by Confidence", ["alta", "media", "baja"], default=["alta"])
+            sel_conf = st.multiselect("Filtrar por Confianza", ["alta", "media", "baja"], default=["alta"])
 
         # First, filter by Municipio and Confidence to determine available labels
         temp_df = df.copy()
-        if sel_mun != "All":
+        if sel_mun != "Todos":
             temp_df = temp_df[temp_df["municipio"] == sel_mun]
         
         available_labels = set()
@@ -140,16 +140,14 @@ if df is not None:
                 pass
         
         with f_col2:
-            # Only show labels that have at least 1 record given the other filters
-            sel_scen = st.selectbox("Filter by Scenario", ["All"] + sorted(list(available_labels)))
+            sel_scen = st.selectbox("Filtrar por Escenario", ["Todos"] + sorted(list(available_labels)))
 
         # Final filtering logic
         def match_criteria(s_str):
             try:
                 scs = json.loads(s_str)
-                # A record matches if it has AT LEAST one scenario that satisfies BOTH filters
                 for s in scs:
-                    label_ok = (sel_scen == "All" or s["scenario_label"] == sel_scen)
+                    label_ok = (sel_scen == "Todos" or s["scenario_label"] == sel_scen)
                     conf_ok = (not sel_conf or s["scenario_confidence"] in sel_conf)
                     if label_ok and conf_ok:
                         return True
@@ -159,12 +157,11 @@ if df is not None:
 
         filtered_df = temp_df[temp_df["scenarios"].apply(match_criteria)]
 
-        st.write(f"Showing {len(filtered_df)} records")
+        st.write(f"Mostrando {len(filtered_df)} registros")
         
-        # Custom display for cases
         for idx, row in filtered_df.iterrows():
-            with st.expander(f"Case {row['id_original']} - {row['municipio']}"):
-                st.write("**Narrative:**")
+            with st.expander(f"Caso {row['id_original']} - {row['municipio']}"):
+                st.write("**Narrativa:**")
                 st.write(row["raw_text"])
                 
                 scs = []
@@ -174,15 +171,15 @@ if df is not None:
                     pass
                 
                 if scs:
-                    st.write("**Identified Scenarios:**")
+                    st.write("**Escenarios Identificados:**")
                     sc_cols = st.columns(len(scs))
                     for i, s in enumerate(scs):
                         with sc_cols[i]:
                             st.markdown(f"**{s['scenario_label']}**")
-                            st.write(f"Confidence: {s['scenario_confidence']}")
-                            st.write(f"Notes: {s.get('notes', 'N/A')}")
+                            st.write(f"Confianza: {s['scenario_confidence']}")
+                            st.write(f"Notas: {s.get('notes', 'N/A')}")
                 
-                st.write("**Metadata:**")
+                st.write("**Metadata (LLM):**")
                 st.json(row["llm_meta"])
 
     with tab2:
@@ -190,81 +187,93 @@ if df is not None:
         from pyvis.network import Network
         import streamlit.components.v1 as components
 
-        st.subheader("Interactive Relationship Networks")
+        st.subheader("Redes de Relación Interactivas")
         
         g_col1, g_col2 = st.columns([1, 3])
         
         with g_col1:
-            graph_type = st.radio("Select Graph Type", ["Relationship Network (Bipartite)", "Narrative Affinity (Case-to-Case)"])
+            graph_type = st.radio("Tipo de Grafo", ["Red de Relaciones (Bipartita)", "Afinidad Narrativa (Caso a Caso)"])
             
-            gml_file = "relationship_network.gml" if "Bipartite" in graph_type else "probable_graph.gml"
+            gml_file = "relationship_network.gml" if "Relaciones" in graph_type else "probable_graph.gml"
             gml_path = os.path.join(RESULTS_DIR, gml_file)
 
             if os.path.exists(gml_path):
-                # Load graph
                 G_raw = nx.read_gml(gml_path)
                 
-                # Dynamic Filters
                 st.write("---")
-                st.write("**Filters**")
+                st.write("**Filtros**")
                 
-                # 1. Filter by Type (for Bipartite)
-                available_types = sorted(list(set(nx.get_node_attributes(G_raw, 'type').values())))
-                if not available_types: available_types = ['case']
+                # Always show all possible project types
+                available_types = ['case', 'scenario', 'keyword', 'family']
                 
-                sel_types = st.multiselect("Visible Node Types", available_types, default=available_types)
-                
-                # 2. Filter by Municipio (if exists)
-                muns = sorted(list(set([d.get('municipio', 'N/A') for n, d in G_raw.nodes(data=True) if d.get('municipio')])))
-                sel_g_muns = st.multiselect("Filter by Municipio", ["All"] + muns, default=["All"])
-                
-                # Search
-                search_node = st.text_input("Search Node (ID/Label)")
+                # Wrapped in a form to avoid real-time re-rendering of the graph
+                with st.form("graph_filters_form"):
+                    sel_types = st.multiselect("Tipos de Nodo Visibles", available_types, default=[t for t in available_types if t in ['case', 'scenario']])
+                    
+                    muns = sorted(list(set([d.get('municipio', 'N/A') for n, d in G_raw.nodes(data=True) if d.get('municipio')])))
+                    sel_g_muns = st.multiselect("Filtrar por Municipio (Grafo)", ["Todos"] + muns, default=["Todos"])
+
+                    # 3. Filter by Confidence (for Scenario edges)
+                    sel_g_conf = st.multiselect("Confianza Escenarios", ["alta", "media", "baja"], default=["alta"])
+                    
+                    search_node = st.text_input("Buscar Nodo (ID/Etiqueta)")
+                    
+                    apply_btn = st.form_submit_button("Aplicar Cambios")
+
+                if apply_btn or 'graph_initialized' not in st.session_state:
+                    st.session_state['graph_initialized'] = True
+                    # The filtering logic will run below
 
                 # Apply Filters to NetworkX
-                nodes_to_keep = []
-                for n, d in G_raw.nodes(data=True):
+                G = G_raw.copy()
+                
+                # A. Filter edges by confidence (for case-scenario links)
+                edges_to_remove = []
+                for u, v, d in G.edges(data=True):
+                    conf = d.get('confidence')
+                    if conf: # Only apply to edges that have a confidence attribute
+                        if not sel_g_conf or conf not in sel_g_conf:
+                            edges_to_remove.append((u, v))
+                G.remove_edges_from(edges_to_remove)
+
+                # B. Filter nodes by type, municipio, and search
+                nodes_to_remove = []
+                for n, d in G.nodes(data=True):
                     type_ok = d.get('type', 'case') in sel_types
-                    mun_ok = "All" in sel_g_muns or d.get('municipio') in sel_g_muns
+                    mun_ok = "Todos" in sel_g_muns or d.get('municipio') in sel_g_muns
                     search_ok = not search_node or search_node.lower() in str(n).lower() or search_node.lower() in str(d.get('label', '')).lower()
                     
-                    if type_ok and mun_ok and search_ok:
-                        nodes_to_keep.append(n)
+                    if not (type_ok and mun_ok and search_ok):
+                        nodes_to_remove.append(n)
                 
-                G = G_raw.subgraph(nodes_to_keep).copy()
+                G.remove_nodes_from(nodes_to_remove)
                 
-                # Remove isolated nodes if requested
-                if st.checkbox("Hide Isolated Nodes", value=True):
+                if st.checkbox("Ocultar Nodos Aislados", value=True):
                     G.remove_nodes_from(list(nx.isolates(G)))
 
         with g_col2:
             if os.path.exists(gml_path):
                 try:
-                    # Setup PyVis
                     net = Network(height="750px", width="100%", bgcolor="#1a1a1a", font_color="white")
                     net.force_atlas_2based()
                     
-                    # Colors
                     type_colors = {
-                        'case': "#FF4B4B",     # Red
-                        'scenario': "#1C83E1", # Blue
-                        'keyword': "#6FCF97",  # Green
-                        'family': "#FFD21F",   # Yellow
+                        'case': "#FF4B4B",
+                        'scenario': "#1C83E1",
+                        'keyword': "#6FCF97",
+                        'family': "#FFD21F",
                         'unknown': "#808080"
                     }
 
-                    # Add nodes with enriched data
                     for node, data in G.nodes(data=True):
                         n_type = data.get('type', 'case')
                         color = type_colors.get(n_type, type_colors['unknown'])
                         label = data.get('label', node)
                         
-                        # BUILD ENRICHED TOOLTIP (Title)
-                        title_text = f"TYPE: {n_type.upper()} | ID: {node}\n"
+                        title_text = f"TIPO: {n_type.upper()} | ID: {node}\n"
                         title_text += "-" * 30 + "\n"
                         
                         if n_type == 'case':
-                            # Try to find narrative in main df
                             case_row = df[df['id_original'] == node]
                             if not case_row.empty:
                                 narr = case_row.iloc[0]['raw_text']
@@ -272,12 +281,10 @@ if df is not None:
                                 title_text += f"MUNICIPIO: {case_row.iloc[0]['municipio']}\n"
                         
                         elif n_type == 'scenario':
-                            # Try to find description in scenario pool
                             scen_info = next((s for s in scenario_pool if s['label'] == node.replace("SCEN:", "")), None)
                             if scen_info:
                                 title_text += f"DESCRIPCIÓN:\n{scen_info.get('description', 'N/A')}\n"
                         
-                        # Add other metadata
                         for k, v in data.items():
                             if k not in ['type', 'label', 'municipio']:
                                 title_text += f"{k.upper()}: {v}\n"
@@ -286,11 +293,9 @@ if df is not None:
                                      size=25 if n_type in ['case', 'scenario'] else 15,
                                      borderWidth=2)
 
-                    # Add edges
                     for source, target, data in G.edges(data=True):
                         net.add_edge(source, target, value=data.get('weight', 1.0), color="rgba(200, 200, 200, 0.3)")
 
-                    # Options for interaction
                     net.set_options("""
                     var options = {
                       "physics": {
@@ -308,14 +313,11 @@ if df is not None:
                     }
                     """)
 
-                    # Save and embed
                     path = os.path.abspath("temp_graph.html")
                     net.save_graph(path)
                     
                     with open(path, 'r', encoding='utf-8') as f:
                         html_content = f.read()
-                        
-                        # INJECT CUSTOM CSS FOR TOOLTIPS
                         custom_style = """
                         <style>
                         div.vis-tooltip {
@@ -334,74 +336,107 @@ if df is not None:
                         }
                         </style>
                         """
-                        # Insert style before closing head tag
                         html_content = html_content.replace("</head>", f"{custom_style}</head>")
-                        
                         components.html(html_content, height=850, scrolling=True)
                     
                 except Exception as e:
-                    st.error(f"Error rendering graph: {e}")
+                    st.error(f"Error renderizando el grafo: {e}")
             else:
-                st.info(f"Graph file not found: {gml_file}. Please run the pipeline first.")
+                st.info(f"Archivo de grafo no encontrado: {gml_file}")
 
     with tab3:
-        st.subheader("🧬 Neural Clusters (Semantic Groups)")
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        import numpy as np
+
+        st.subheader("🧬 Clusters Neurales (Grupos Semánticos)")
         st.markdown("""
         Esta vista agrupa casos por su **alma narrativa** (embeddings). 
-        Los clusters son generados automáticamente por el algoritmo HDBSCAN.
+        Permite identificar patrones emergentes que la taxonomía clásica podría ignorar.
         """)
 
         if 'cluster_label' in df.columns:
-            # Filter out noise (-1)
             clusters_df = df[df['cluster_label'] != -1]
             n_clusters = clusters_df['cluster_label'].nunique()
             
             if n_clusters > 0:
-                cluster_id = st.select_slider("Select Cluster ID", options=sorted(clusters_df['cluster_label'].unique()))
+                # TF-IDF Calculation for Keyword Discrimination
+                all_cluster_docs = []
+                cluster_ids = sorted(clusters_df['cluster_label'].unique())
                 
+                for cid in cluster_ids:
+                    c_rows = clusters_df[clusters_df['cluster_label'] == cid]
+                    kws_list = []
+                    for k in c_rows['keywords'].dropna():
+                        if isinstance(k, str):
+                            try: k = json.loads(k)
+                            except: k = k.split(", ")
+                        kws_list.extend([kw.replace(" ", "_") for kw in k]) # Use snake_case for TF-IDF
+                    all_cluster_docs.append(" ".join(kws_list))
+
+                vectorizer = TfidfVectorizer(token_pattern=r"(?u)\b\w+\b")
+                tfidf_matrix = vectorizer.fit_transform(all_cluster_docs)
+                feature_names = vectorizer.get_feature_names_out()
+
+                cluster_id = st.select_slider("Seleccionar ID de Cluster", options=cluster_ids)
+                c_idx = cluster_ids.index(cluster_id)
                 c_data = clusters_df[clusters_df['cluster_label'] == cluster_id]
                 
                 col_a, col_b = st.columns(2)
                 
                 with col_a:
-                    st.metric("Cases in Cluster", len(c_data))
+                    st.metric("Casos en este Cluster", len(c_data))
                     
-                    # Dominant Scenarios in Cluster
+                    # Scenario Distribution (Priority)
                     all_scs = []
                     for s_str in c_data['scenarios'].dropna():
                         try:
                             scs = json.loads(s_str)
-                            all_scs.extend([s['scenario_label'] for s in scs if s['scenario_confidence'] in ['alta', 'media']])
+                            all_scs.extend([s['scenario_label'] for s in scs if s['scenario_confidence'] == 'alta'])
                         except: pass
                     
                     if all_scs:
-                        st.write("**Dominant Scenarios:**")
+                        st.write("**Distribución de Escenarios:**")
                         sc_counts = pd.Series(all_scs).value_counts()
                         st.bar_chart(sc_counts)
+                    else:
+                        st.info("Sin escenarios con confianza suficiente.")
                 
                 with col_b:
-                    # Dominant Keywords in Cluster
-                    all_kws = []
-                    for kws in c_data['keywords'].dropna():
-                        if isinstance(kws, str):
-                            try: kws = json.loads(kws)
-                            except: kws = kws.split(", ")
-                        all_kws.extend(kws)
+                    # Discriminating Keywords (TF-IDF)
+                    st.write("**🔑 Palabras Clave Discriminantes (TF-IDF):**")
+                    st.caption("Palabras que describen la singularidad de este cluster frente a los demás.")
                     
-                    if all_kws:
-                        st.write("**Top Keywords in Cluster:**")
-                        kw_counts = pd.Series(all_kws).value_counts().head(10)
-                        fig = px.pie(names=kw_counts.index, values=kw_counts.values, hole=0.4)
+                    row_data = tfidf_matrix.getrow(c_idx).toarray()[0]
+                    top_kw_indices = row_data.argsort()[-15:][::-1]
+                    top_kws = {feature_names[i]: row_data[i] for i in top_kw_indices if row_data[i] > 0}
+                    
+                    if top_kws:
+                        kw_df = pd.DataFrame(list(top_kws.items()), columns=['Keyword', 'Score']).sort_values('Score', ascending=False)
+                        fig = px.bar(kw_df, x='Score', y='Keyword', orientation='h', color='Score', 
+                                     color_continuous_scale='Viridis', title="Top TF-IDF Keywords")
                         st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No se hallaron palabras clave discriminantes.")
+
+                st.divider()
+                st.subheader("📖 Elementos Clave del Relato")
+                st.markdown("Basado en el análisis de divergencia, estos son los elementos que definen este grupo:")
+                
+                # Show top 5 keywords as bullet points
+                top_5 = list(top_kws.keys())[:5]
+                if top_5:
+                    cols = st.columns(len(top_5))
+                    for i, kw in enumerate(top_5):
+                        cols[i].info(f"**{kw.replace('_', ' ').upper()}**")
 
                 st.write("---")
-                st.write(f"**Cases in Cluster {cluster_id}:**")
+                st.write(f"**Explorador de Casos del Cluster {cluster_id}:**")
                 st.dataframe(c_data[['id_original', 'municipio', 'raw_text']], use_container_width=True)
             else:
-                st.info("No distinct clusters detected yet. The current results might be too diverse or small.")
+                st.info("No se han detectado clusters distintos aún.")
         else:
-            st.warning("Clustering data not found. Please run the pipeline with embeddings enabled.")
+            st.warning("Datos de clustering no encontrados. Ejecute el pipeline con embeddings habilitados.")
 
 else:
-    st.warning("No data found in results directory. Run the pipeline first.")
+    st.warning("No se encontraron datos en el directorio de resultados. Ejecute el pipeline primero.")
     st.code("python process_probable.py --sample 50 --batch-size 10")

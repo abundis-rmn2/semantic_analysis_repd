@@ -124,7 +124,7 @@ class ProbableProcessor:
                     {"role": "user", "content": prompt}
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.2
+                temperature=0.4
             )
             data = json.loads(response.choices[0].message.content)
             
@@ -141,41 +141,50 @@ class ProbableProcessor:
         """Update keyword and scenario pools using LLM normalization."""
         if not self.client: return
 
-        # 1. Normalize Scenarios
+        # 1. Normalize Scenarios in chunks if there are many
         if emergent_scenarios:
-            logger.info(f"Normalizing {len(emergent_scenarios)} emergent scenarios...")
-            norm_prompt = SCENARIO_NORMALIZER_PROMPT.format(
-                standard_pool=json.dumps(self.scenario_pool, indent=2),
-                emergent_scenarios=json.dumps(emergent_scenarios, indent=2)
-            )
-            try:
-                resp = self.client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=[{"role": "user", "content": norm_prompt}],
-                    response_format={"type": "json_object"}
+            chunk_size = 30
+            for i in range(0, len(emergent_scenarios), chunk_size):
+                chunk = emergent_scenarios[i:i + chunk_size]
+                logger.info(f"Normalizing chunk {i//chunk_size + 1} ({len(chunk)} scenarios)...")
+                
+                norm_prompt = SCENARIO_NORMALIZER_PROMPT.format(
+                    standard_pool=json.dumps(self.scenario_pool, indent=2),
+                    emergent_scenarios=json.dumps(chunk, indent=2)
                 )
-                norm_data = json.loads(resp.choices[0].message.content)
-                self.scenario_pool = norm_data.get('updated_pool', self.scenario_pool)
-            except Exception as e:
-                logger.error(f"Error normalizing scenarios: {e}")
+                try:
+                    resp = self.client.chat.completions.create(
+                        model="deepseek-chat",
+                        messages=[{"role": "user", "content": norm_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    norm_data = json.loads(resp.choices[0].message.content)
+                    self.scenario_pool = norm_data.get('updated_pool', self.scenario_pool)
+                except Exception as e:
+                    logger.error(f"Error normalizing scenario chunk: {e}")
 
-        # 2. Update Keyword Pool
+        # 2. Update Keyword Pool in chunks if there are many
         if discovered_keywords:
-            logger.info(f"Updating keyword pool with {len(discovered_keywords)} new keywords...")
-            kw_prompt = KEYWORD_POOL_PROMPT.format(
-                keyword_pool=json.dumps(self.keyword_pool, indent=2),
-                new_keywords=json.dumps(list(set(discovered_keywords)), indent=2)
-            )
-            try:
-                resp = self.client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=[{"role": "user", "content": kw_prompt}],
-                    response_format={"type": "json_object"}
+            chunk_size = 100
+            unique_new_kws = list(set(discovered_keywords))
+            for i in range(0, len(unique_new_kws), chunk_size):
+                chunk = unique_new_kws[i:i + chunk_size]
+                logger.info(f"Updating keyword pool chunk {i//chunk_size + 1} ({len(chunk)} keywords)...")
+                
+                kw_prompt = KEYWORD_POOL_PROMPT.format(
+                    keyword_pool=json.dumps(self.keyword_pool, indent=2),
+                    new_keywords=json.dumps(chunk, indent=2)
                 )
-                kw_data = json.loads(resp.choices[0].message.content)
-                self.keyword_pool = kw_data.get('updated_keyword_pool', self.keyword_pool)
-            except Exception as e:
-                logger.error(f"Error updating keywords: {e}")
+                try:
+                    resp = self.client.chat.completions.create(
+                        model="deepseek-chat",
+                        messages=[{"role": "user", "content": kw_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    kw_data = json.loads(resp.choices[0].message.content)
+                    self.keyword_pool = kw_data.get('updated_keyword_pool', self.keyword_pool)
+                except Exception as e:
+                    logger.error(f"Error updating keyword chunk: {e}")
 
         self._save_pools()
 
@@ -246,10 +255,14 @@ class ProbableProcessor:
                             "notes": s.notes or ""
                         })
             
-            # C. Merge & Corroborate
+            # C. Merge & Corroborate (General logic to boost confidence if keywords match)
             for scenario in scenarios:
-                if scenario.scenario_label == 'laboral_forzada' and any(h['family'] == 'laboral' for h in observables['keyword_hits']):
-                    scenario.scenario_confidence = 'alta'
+                # If scenario name (or part of it) matches a keyword family hit, boost confidence
+                for hit in observables['keyword_hits']:
+                    if hit['family'].lower() in scenario.scenario_label.lower():
+                        if scenario.scenario_confidence != 'alta':
+                            scenario.scenario_confidence = 'alta'
+                            scenario.notes = (scenario.notes or "") + f" [Corroborado por familia: {hit['family']}]"
             
             # D. Final Schema Mapping
             analysis = EventAnalysis(

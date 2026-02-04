@@ -17,6 +17,7 @@ def build_affinity_graph(df: pd.DataFrame, similarity_threshold: float = 0.7) ->
     for _, row in df.iterrows():
         node_id = row['id_original']
         G.add_node(node_id, 
+                   type='case',
                    municipio=row.get('municipio', 'UNKNOWN'),
                    ambiguity=row.get('ambiguity_score', 0),
                    cluster=row.get('cluster_label', -1))
@@ -28,8 +29,20 @@ def build_affinity_graph(df: pd.DataFrame, similarity_threshold: float = 0.7) ->
         weight = 0
         
         # 1. Scenario Co-occurrence (High Confidence)
-        scenarios_a = {s['scenario_label'] for s in row_a.get('scenarios', []) if s.get('scenario_confidence') == 'alta'}
-        scenarios_b = {s['scenario_label'] for s in row_b.get('scenarios', []) if s.get('scenario_confidence') == 'alta'}
+        scs_a = row_a.get('scenarios', [])
+        if isinstance(scs_a, str):
+            import json
+            try: scs_a = json.loads(scs_a)
+            except: scs_a = []
+            
+        scs_b = row_b.get('scenarios', [])
+        if isinstance(scs_b, str):
+            import json
+            try: scs_b = json.loads(scs_b)
+            except: scs_b = []
+
+        scenarios_a = {s['scenario_label'] for s in scs_a if isinstance(s, dict) and s.get('scenario_confidence') == 'alta'}
+        scenarios_b = {s['scenario_label'] for s in scs_b if isinstance(s, dict) and s.get('scenario_confidence') == 'alta'}
         shared_scenarios = scenarios_a.intersection(scenarios_b)
         if shared_scenarios:
             weight += 0.4
@@ -39,12 +52,20 @@ def build_affinity_graph(df: pd.DataFrame, similarity_threshold: float = 0.7) ->
         obs_a = row_a.get('observables', {})
         obs_b = row_b.get('observables', {})
         
-        # Temporal proximity (within 7 days if date_dt exists)
-        if pd.notna(row_a.get('date_dt')) and pd.notna(row_b.get('date_dt')):
-            diff_days = abs((row_a['date_dt'] - row_b['date_dt']).days)
-            if diff_days <= 7:
-                weight += 0.2
-                reasons.append(f"temporal_proximity:{diff_days}d")
+        # Shared Temporal Proximity (within 7 days if date_dt exists)
+        date_a = row_a.get('date_dt')
+        date_b = row_b.get('date_dt')
+        
+        if pd.notna(date_a) and pd.notna(date_b):
+            try:
+                if isinstance(date_a, str): date_a = pd.to_datetime(date_a)
+                if isinstance(date_b, str): date_b = pd.to_datetime(date_b)
+                diff_days = abs((date_a - date_b).days)
+                if diff_days <= 7:
+                    weight += 0.2
+                    reasons.append(f"temporal_proximity:{diff_days}d")
+            except:
+                pass
                 
         # Shared Location (Municipio)
         if row_a.get('municipio') == row_b.get('municipio') and row_a.get('municipio') != 'DESCONOCIDO':
@@ -97,17 +118,28 @@ def build_bipartite_network(df: pd.DataFrame, keyword_pool: Dict[str, List[str]]
             except: scs = []
             
         for s in scs:
-            if s.get('scenario_confidence') in ['alta', 'media']:
-                scen_node = f"SCEN:{s['scenario_label']}"
-                G.add_node(scen_node, type='scenario', label=s['scenario_label'])
-                G.add_edge(case_id, scen_node, weight=1.0 if s['scenario_confidence'] == 'alta' else 0.5)
+            conf = s.get('scenario_confidence', 'baja').lower()
+            scen_node = f"SCEN:{s['scenario_label']}"
+            G.add_node(scen_node, type='scenario', label=s['scenario_label'])
+            
+            # Map confidence to weight for visualization
+            w = 1.0 if conf == 'alta' else (0.5 if conf == 'media' else 0.2)
+            G.add_edge(case_id, scen_node, weight=w, confidence=conf)
 
         # 2. Case -> Keyword -> Family
         kws = row.get('keywords', [])
         if isinstance(kws, str):
             import json
-            try: kws = json.loads(kws)
-            except: kws = []
+            try: 
+                kws = json.loads(kws)
+            except: 
+                # Fallback: handle comma-separated strings or simple lists
+                if ',' in kws:
+                    kws = [k.strip() for k in kws.split(',')]
+                else:
+                    kws = [kws.strip()] if kws.strip() else []
+        elif not isinstance(kws, (list, tuple)) and pd.isna(kws):
+            kws = []
 
         for kw in kws:
             kw_node = f"KW:{kw.lower()}"
@@ -132,6 +164,11 @@ def save_graph(G: nx.Graph, output_path: str):
             for k, v in data.items():
                 if isinstance(v, (list, dict)):
                     G_serializable.nodes[n][k] = str(v)
+        
+        for u, v, data in G_serializable.edges(data=True):
+            for k, v in data.items():
+                if isinstance(v, (list, dict)):
+                    G_serializable.edges[u, v][k] = str(v)
         
         nx.write_gml(G_serializable, output_path)
         logger.info(f"Graph saved to {output_path}")

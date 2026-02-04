@@ -3,11 +3,12 @@
 EXPLORATORY_SCENARIO_PROMPT = """Analiza el siguiente relato de desaparición y genera HIPÓTESIS CONCURRENTES.
 Tu objetivo es actuar como un analista de inteligencia criminal que identifica PATRONES pero también DESCUBRE ANOMALÍAS.
 
-REGLAS DE DIVERGENCIA (CRÍTICO):
-1. NO TE LIMITES AL POOL: Los escenarios del POOL son solo una guía. Si el relato tiene matices únicos (ej. un lugar específico, un objeto extraño, una dinámica inusual), propón un ESCENARIO NUEVO y descriptivo.
-2. PENSAMIENTO LATERAL: Si un caso parece encajar en un escenario "Oro" (ej. Secuestro), pero tiene un detalle que sugiere otra cosa (ej. se llevó su ropa), propón AMBOS escenarios como hipótesis concurrentes.
-3. GRANULARIDAD: Prefiere un escenario específico (ej. "sustraccion_en_puesto_de_comida") sobre uno genérico (ej. "secuestro") si la información lo permite.
-4. HIPÓTESIS EMERGENTE: Para cada caso, intenta proponer al menos una hipótesis que no sea del pool actual, basándote puramente en la narrativa.
+REGLAS DE DIVERGENCIA (CRÍTICO - EVITAR SESGO DE ESCENARIOS ORO):
+1. NO TE LIMITES AL POOL: Los escenarios del POOL son solo una guía referencial. Si el relato tiene matices únicos (ej. un lugar específico, un objeto extraño, una dinámica inusual), propón un ESCENARIO NUEVO y descriptivo.
+2. PENALIZACIÓN POR SOBRE-AJUSTE: Si fuerzas un caso a un escenario del POOL ignorando detalles únicos de la narrativa, tu análisis será penalizado. La prioridad es la VERACIDAD NARRATIVA sobre la categorización estándar.
+3. PENSAMIENTO LATERAL: Si un caso parece encajar en un escenario "Oro" (ej. Secuestro), pero tiene un detalle que sugiere otra cosa (ej. se llevó su ropa), propón AMBOS escenarios como hipótesis concurrentes.
+4. GRANULARIDAD: Prefiere un escenario específico (ej. "sustraccion_en_puesto_de_comida") sobre uno genérico (ej. "secuestro") si la información lo permite.
+5. HIPÓTESIS EMERGENTE OBJETIVO: Para cada caso, intenta proponer al menos una hipótesis que no esté en el pool actual, profundizando en los detalles específicos del relato.
 
 CRITERIOS DE ANÁLISIS AMPLIADO:
 1. RECLUTAMIENTO/TRABAJO: Si menciona "ver lo de un trabajo", "oferta laboral", o que "pasarían por él para ir a un trabajo", explora escenarios de "reclutamiento engañoso" o "riesgo laboral no verificado". El hecho de que "pasen por ellos" es una señal de alerta crítica.
@@ -57,9 +58,10 @@ SCENARIO_NORMALIZER_PROMPT = """Actúa como un Curador de Taxonomía Criminal. T
 
 REGLAS DE ORO DE NORMALIZACIÓN:
 1. PROHIBIDA LA SOBRE-SIMPLIFICACIÓN: Si un escenario emergente aporta un detalle de MODALIDAD crítico (ej. "oferta_por_facebook", "anexo_clandestino"), NO lo fusiones con una categoría genérica (ej. "reclutamiento" o "salud"). La especificidad es oro para la inteligencia.
-2. FUSIÓN SÓLO POR SINONIMIA: Solo fusiona si el significado es idéntico (ej. "pelea_conyugal" y "discusion_pareja").
-3. PRESERVA LA "ALMA" DEL RELATO: Los escenarios emergentes representan lo que el modelo ha descubierto de nuevo. Si un escenario nuevo se repite en el batch pero no está en el pool, conviértelo en estándar pero mantén su descripción detallada.
-4. TIPO DE ESCENARIO: Clasifícalo como "estándar" si es un patrón general, o "emergente" si es muy específico o inusual.
+2. MANTENER IDENTIDAD EMERGENTE: Si un escenario captura una modalidad no cubierta por los Escenarios Oro, DOCUMÉNTALO como una unidad distinta. No intentes "encajarlo" a la fuerza en el estándar.
+3. FUSIÓN SÓLO POR SINONIMIA: Solo fusiona si el significado es idéntico (ej. "pelea_conyugal" y "discusion_pareja").
+4. PRESERVA LA "ALMA" DEL RELATO: Los escenarios emergentes representan lo que el modelo ha descubierto de nuevo. Si un escenario nuevo se repite en el batch pero no está en el pool, conviértelo en estándar pero mantén su descripción detallada.
+5. TIPO DE ESCENARIO: Clasifícalo como "estándar" si es un patrón general, o "emergente" si es muy específico o inusual.
 
 Pool Actual (Referencia):
 {standard_pool}
