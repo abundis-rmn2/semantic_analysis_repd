@@ -28,3 +28,23 @@ python3 -m spacy download es_core_news_sm
 ```bash
 python3 process_violence.py
 ```
+
+## Running on Raspberry Pi
+To set up this project on a Raspberry Pi (Pi 4 or newer recommended):
+
+1. **Install Dependencies**: Run the provided setup script:
+   ```bash
+   ./setup_pi.sh
+   ```
+2. **Configure Environment**:
+   ```bash
+   cp config/.env.example config/.env
+   # Edit config/.env and add your DEEPSEEK_API_KEY
+   ```
+3. **Run the Dashboard**:
+   ```bash
+   source venv/bin/activate
+   streamlit run dashboard_probable.py
+   ```
+
+Note: Some heavy dependencies like `faiss-cpu` and `sentence-transformers` may take significant time to install and may require at least 4GB of RAM for smooth operation.
