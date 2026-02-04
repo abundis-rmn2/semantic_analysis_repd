@@ -18,29 +18,34 @@ source venv/bin/activate
 # Upgrade pip
 pip install --upgrade pip
 
-# Clean pip cache to avoid using incompatible ARM builds
+# Clean pip cache
 echo "Cleaning pip cache..."
 pip cache purge
 
-# Set environment variables for ARM architecture stability
-echo "Configuring environment for ARM (Raspberry Pi)..."
-export OPENBLAS_CORETYPE=ARMV8
-export BLIS_ARCH="generic"
+# Architecture Detection
+ARCH=$(uname -m)
+echo "Detected architecture: $ARCH"
 
-# Ensure these variables persist in the virtual environment
-echo 'export OPENBLAS_CORETYPE=ARMV8' >> venv/bin/activate
-echo 'export BLIS_ARCH="generic"' >> venv/bin/activate
+if [[ "$ARCH" == "aarch64" || "$ARCH" == "armv7l" ]]; then
+    echo "Configuring for ARM (Raspberry Pi)..."
+    export OPENBLAS_CORETYPE=ARMV8
+    export BLIS_ARCH="generic"
+    echo 'export OPENBLAS_CORETYPE=ARMV8' >> venv/bin/activate
+    echo 'export BLIS_ARCH="generic"' >> venv/bin/activate
+else
+    echo "Configuring for standard CPU (x86_64)..."
+fi
 
 # 1. Install NumPy first to pin version
 echo "Installing NumPy..."
 pip install "numpy<2"
 
-# 2. Install Torch (CPU version) explicitly for ARM compatibility
+# 2. Install Torch (CPU version) explicitly for compatibility
 echo "Installing Torch (CPU-only)..."
 pip install torch==2.2.0 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # 3. Install remaining requirements
-echo "Installing Python dependencies (this may take a while on a Pi)..."
+echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
 # Download Spacy model
@@ -48,8 +53,9 @@ echo "Downloading Spacy model..."
 python3 -m spacy download es_core_news_sm
 
 echo "Setup complete!"
+echo "------------------------------------------------"
 echo "To run the project:"
-echo "1. Copy config/.env.example to config/.env and add your API key."
-echo "2. Activate the virtual environment: source venv/bin/activate"
-echo "3. Run the analysis (example): python process_probable.py --sample 20"
-echo "4. Run the dashboard: streamlit run dashboard_probable.py"
+echo "1. Configure your API key: nano config/.env"
+echo "2. Activate virtualenv: source venv/bin/activate"
+echo "3. Run analysis: python process_probable.py --sample 20"
+echo "4. Run dashboard: streamlit run dashboard_probable.py"
