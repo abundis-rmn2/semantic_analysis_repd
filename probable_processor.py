@@ -158,7 +158,12 @@ class ProbableProcessor:
                         messages=[{"role": "user", "content": norm_prompt}],
                         response_format={"type": "json_object"}
                     )
-                    norm_data = json.loads(resp.choices[0].message.content)
+                    raw_content = resp.choices[0].message.content
+                    # Clean markdown if present
+                    if "```json" in raw_content:
+                        raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                    
+                    norm_data = json.loads(raw_content)
                     self.scenario_pool = norm_data.get('updated_pool', self.scenario_pool)
                 except Exception as e:
                     logger.error(f"Error normalizing scenario chunk: {e}")
@@ -181,7 +186,12 @@ class ProbableProcessor:
                         messages=[{"role": "user", "content": kw_prompt}],
                         response_format={"type": "json_object"}
                     )
-                    kw_data = json.loads(resp.choices[0].message.content)
+                    raw_content = resp.choices[0].message.content
+                    # Clean markdown if present
+                    if "```json" in raw_content:
+                        raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                    
+                    kw_data = json.loads(raw_content)
                     self.keyword_pool = kw_data.get('updated_keyword_pool', self.keyword_pool)
                 except Exception as e:
                     logger.error(f"Error updating keyword chunk: {e}")

@@ -5,3 +5,4 @@ __pycache__/*
 lib/*
 *.html
 reusable/__pycache__/*
+venv/*
